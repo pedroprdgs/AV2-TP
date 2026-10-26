@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/prisma-generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EstadoEquipamento {
+  RECEBIDO
+  EM_TRIAGEM
+  TRIADO
+  EM_DESMONTAGEM
+  DESMONTADO
+}
+
+model Organizacao {
+  id             String   @id @default(uuid()) @db.Uuid
+  razaoSocial    String
+  nomeFantasia   String?
+  cnpj           String   @unique
+  email          String?
+  telefone       String?
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+  versao         Int      @default(1)
+
+  contrato       Contrato?
+  lotes          Lote[]
+}
+
+model Contrato {
+  id             String      @id @default(uuid()) @db.Uuid
+  numero         String      @unique
+  dataInicio     DateTime
+  dataFim        DateTime?
+  valor          Decimal?    @db.Decimal(12, 2)
+  clausulas      Json?
+  criadoEm       DateTime    @default(now())
+  atualizadoEm   DateTime    @updatedAt
+  versao         Int         @default(1)
+
+  organizacaoId  String      @unique @db.Uuid
+  organizacao    Organizacao @relation(fields: [organizacaoId], references: [id])
+}
+
+model Lote {
+  id             String      @id @default(uuid()) @db.Uuid
+  notaFiscal     String
+  transportadora String
+  dataEntrada    DateTime
+  criadoEm       DateTime    @default(now())
+  atualizadoEm   DateTime    @updatedAt
+  versao         Int         @default(1)
+
+  organizacaoId  String      @db.Uuid
+  organizacao    Organizacao @relation(fields: [organizacaoId], references: [id])
+  equipamentos   Equipamento[]
+}
+
+model Equipamento {
+  id                  String             @id @default(uuid()) @db.Uuid
+  codigoBarrasInterno String             @unique
+  tipo                String
+  descricao           String?
+  estado              EstadoEquipamento  @default(RECEBIDO)
+  triagemCompleta     Boolean            @default(false)
+  criadoEm            DateTime           @default(now())
+  atualizadoEm        DateTime           @updatedAt
+  versao              Int                @default(1)
+
+  loteId              String             @db.Uuid
+  lote                Lote               @relation(fields: [loteId], references: [id])
+  movimentacoes       Movimentacao[]
+}
+
+model Movimentacao {
+  id             String       @id @default(uuid()) @db.Uuid
+  estadoAnterior EstadoEquipamento?
+  estadoNovo     EstadoEquipamento
+  justificativa  String?
+  observacao     String?
+  dataHora       DateTime     @default(now())
+  versao         Int          @default(1)
+
+  equipamentoId  String       @db.Uuid
+  equipamento    Equipamento  @relation(fields: [equipamentoId], references: [id])
+}
