@@ -4,6 +4,7 @@ import { AppError } from "../errors/AppError.js";
 import { validarCnpj } from "../utils/validarCnpj.js";
 import { validarString } from "../utils/validarString.js";
 import { validarUuid } from "../utils/validarUuid.js";
+import { validarVersao } from "../utils/validarVersao.js";
 import type { DadosCriacaoOrganizacao, DadosAtualizacaoOrganizacao } from "../models/Organizacao.js";
 
 export default class OrganizacaoService {
@@ -54,6 +55,7 @@ export default class OrganizacaoService {
 
     async atualizar(id: string, dados: DadosAtualizacaoOrganizacao) {
         const idValido = validarUuid(id);
+        const versaoEsperada = validarVersao(dados.versaoEsperada);
 
         const existente = await this.repository.buscarPorId(idValido);
 
@@ -61,7 +63,11 @@ export default class OrganizacaoService {
             throw new AppError("Organização não encontrada.", 404);
         }
 
-        const dadosValidados: DadosAtualizacaoOrganizacao = {};
+        if (existente.versao !== versaoEsperada) {
+            throw new AppError("A organização foi alterada por outra operação. Consulte os dados novamente.", 409);
+        }
+
+        const dadosValidados: Omit<DadosAtualizacaoOrganizacao, "versaoEsperada"> = {};
 
         if (dados.razaoSocial !== undefined) {
             dadosValidados.razaoSocial = validarString(dados.razaoSocial, "razaoSocial");
@@ -97,11 +103,12 @@ export default class OrganizacaoService {
             throw new AppError("Informe pelo menos um campo para atualizar.", 400);
         }
 
-        return this.repository.atualizar(id, dadosValidados);
+        return this.repository.atualizar(idValido, dadosValidados, versaoEsperada);
     }
 
-    async excluir(id: string): Promise<void> {
+    async excluir(id: string, versaoEsperada: number): Promise<void> {
         const idValido = validarUuid(id);
+        const versaoValida = validarVersao(versaoEsperada)
 
         const organizacao = await this.repository.buscarPorId(idValido);
 
@@ -109,6 +116,6 @@ export default class OrganizacaoService {
             throw new AppError("Organização não encontrada.", 404);
         }
 
-        await this.repository.excluir(idValido);
+        await this.repository.excluir(idValido, versaoValida);
     }
 }

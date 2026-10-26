@@ -4,6 +4,7 @@ import { AppError } from "../errors/AppError.js";
 import { validarUuid } from "../utils/validarUuid.js";
 import { validarString } from "../utils/validarString.js";
 import type { DadosCriacaoEquipamento, DadosAtualizacaoEquipamento } from "../models/Equipamento.js";
+import { validarVersao } from "../utils/validarVersao.js";
 
 export default class EquipamentoService {
     private equipamentoRepository = new EquipamentoRepository();
@@ -69,13 +70,19 @@ export default class EquipamentoService {
 
     async atualizar(id: string, dados: DadosAtualizacaoEquipamento) {
         const idValido = validarUuid(id);
+        const versaoEsperada = validarVersao(dados.versaoEsperada);
+
         const equipamento = await this.equipamentoRepository.buscarPorId(idValido);
 
         if (!equipamento) {
             throw new AppError("Equipamento não encontrado.", 404);
         }
 
-        const dadosValidados: DadosAtualizacaoEquipamento = {};
+        if (equipamento.versao !== versaoEsperada) {
+            throw new AppError("O equipamento foi alterado por outra operação. Consulte os dados novamente.", 409);
+        }
+
+        const dadosValidados: Omit<DadosAtualizacaoEquipamento, "versaoEsperada"> = {};
 
         if (dados.codigoBarrasInterno !== undefined) {
             const codigoBarrasInterno = validarString(dados.codigoBarrasInterno, "codigoBarrasInterno");
@@ -109,17 +116,23 @@ export default class EquipamentoService {
             throw new AppError("Informe pelo menos um campo para atualizar.", 400);
         }
 
-        return this.equipamentoRepository.atualizar(id, dadosValidados);
+        return this.equipamentoRepository.atualizar(id, dadosValidados, versaoEsperada);
     }
 
-    async excluir(id: string): Promise<void> {
+    async excluir(id: string, versaoEsperada: number): Promise<void> {
         const idValido = validarUuid(id);
+        const versaoValida =validarVersao(versaoEsperada)
+
         const equipamento = await this.equipamentoRepository.buscarPorId(idValido);
 
         if (!equipamento) {
             throw new AppError("Equipamento não encontrado.", 404);
         }
 
-        await this.equipamentoRepository.excluir(id);
+        if (equipamento.versao !== versaoValida) {
+            throw new AppError("O equipamento foi alterado por outra operação. Consulte os dados novamente.", 409);
+        }
+
+        await this.equipamentoRepository.excluir(id, versaoValida);
     }
 }

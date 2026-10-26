@@ -30,8 +30,8 @@ export default class OrganizacaoController {
         return reply.status(200).send(organizacao);
     }
 
-    async excluir(id: string, reply: FastifyReply) {
-        await this.service.excluir(id);
+    async excluir(id: string, versaoEsperada: number, reply: FastifyReply) {
+        await this.service.excluir(id, versaoEsperada);
 
         return reply.status(204).send();
     }

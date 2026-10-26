@@ -20,7 +20,7 @@ export type CriarOrganizacaoBody = FromSchema<
 
 export const atualizarOrganizacaoSchema = {
     type: "object",
-    required: [],
+    required: ["versaoEsperada"],
     additionalProperties: false,
     properties: {
         razaoSocial: { type: "string", minLength: 1, maxLength: 255 },
@@ -28,7 +28,18 @@ export const atualizarOrganizacaoSchema = {
         cnpj: { type: "string" },
         email: { type: ["string", "null"], minLength: 1, maxLength: 255 },
         telefone: { type: ["string", "null"], minLength: 1, maxLength: 30 },
+
+        versaoEsperada: { type: "integer", minimum: 1 },
     }
+} as const;
+
+export const excluirOrganizacaoSchema = {
+    type: "object",
+    required: ["versaoEsperada"],
+    additionalProperties: false,
+    properties: {
+        versaoEsperada: { type: "integer", minimum: 1, },
+    },
 } as const;
 
 export const organizacaoIdParamsSchema = {

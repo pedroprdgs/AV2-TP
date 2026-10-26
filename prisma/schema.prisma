@@ -20,6 +20,26 @@ enum EstadoEquipamento {
   DESMONTADO
 }
 
+enum PapelUsuario {
+  ADMINISTRADOR
+  OPERADOR_CADASTRO
+  GESTOR_ALMOXARIFADO
+  AUDITOR
+}
+
+model Usuario {
+  id           String       @id @default(uuid()) @db.Uuid
+  nome         String
+  usuario      String       @unique
+  senhaHash    String
+  papel        PapelUsuario
+  ativo        Boolean      @default(true)
+  criadoEm     DateTime     @default(now())
+  atualizadoEm DateTime     @updatedAt
+  versao       Int          @default(1)
+  versaoToken  Int          @default(1)
+}
+
 model Organizacao {
   id             String   @id @default(uuid()) @db.Uuid
   razaoSocial    String

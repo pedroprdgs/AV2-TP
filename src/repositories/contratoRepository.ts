@@ -1,5 +1,6 @@
 import { Prisma } from "../prisma-generated/client.js";
 import { tratarErroPrisma } from "../errors/tratarErroPrisma.js";
+import { AppError } from "../errors/AppError.js";
 import { prisma } from "../lib/prisma.js";
 import type { Contrato, DadosCriacaoContrato, DadosAtualizacaoContrato } from "../models/Contrato.js";
 
@@ -40,12 +41,15 @@ export default class ContratoRepository {
         return prisma.contrato.findUnique({ where: { organizacaoId } });
     }
 
-    async atualizar(id: string, dados: DadosAtualizacaoContrato): Promise<Contrato> {
+    async atualizar(id: string, dados: Omit<DadosAtualizacaoContrato, "versaoEsperada">, versaoEsperada: number): Promise<Contrato> {
         try {
             const { clausulas, ...outrosDados } = dados;
 
             return await prisma.contrato.update({
-                where: { id },
+                where: {
+                    id,
+                    versao: versaoEsperada
+                },
                 data: {
                     ...outrosDados,
                     ...(clausulas !== undefined && {
@@ -58,14 +62,22 @@ export default class ContratoRepository {
                 },
             });
         } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+                throw new AppError("Conflito de versão. Consulte o contrato novamente.", 409);
+            }
+
             tratarErroPrisma(error);
         }
     }
 
-    async excluir(id: string): Promise<void> {
+    async excluir(id: string, versaoEsperada: number): Promise<void> {
         try {
-            await prisma.contrato.delete({ where: { id } });
+            await prisma.contrato.delete({ where: { id, versao: versaoEsperada } });
         } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+                throw new AppError("Conflito de versão. Consulte o contrato novamente.", 409);
+            }
+
             tratarErroPrisma(error);
         }
     }

@@ -25,5 +25,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
   },
-  "exclude": ["./prisma7.config.ts"]
+  "exclude": ["./prisma7.config.ts", "./prisma/"]
 }

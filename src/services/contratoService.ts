@@ -1,10 +1,10 @@
-
 import ContratoRepository from "../repositories/contratoRepository.js";
 import OrganizacaoRepository from "../repositories/organizacaoRepository.js";
 import { AppError } from "../errors/AppError.js";
 import { validarUuid } from "../utils/validarUuid.js";
 import { validarString } from "../utils/validarString.js";
 import { validarData } from "../utils/validarData.js";
+import { validarVersao } from "../utils/validarVersao.js";
 import type { DadosCriacaoContrato, DadosAtualizacaoContrato } from "../models/Contrato.js";
 
 export default class ContratoService {
@@ -82,22 +82,28 @@ export default class ContratoService {
         return contrato;
     }
 
-    async atualizar(idRecebido: string, dados: DadosAtualizacaoContrato) {
-        const id = validarUuid(idRecebido);
+    async atualizar(id: string, dados: DadosAtualizacaoContrato) {
+        const idValido = validarUuid(id);
+        const versaoEsperada = validarVersao(dados.versaoEsperada);
+
         const contrato = await this.contratoRepository.buscarPorId(id);
 
         if (!contrato) {
             throw new AppError("Contrato não encontrado.", 404);
         }
 
-        const dadosValidados: DadosAtualizacaoContrato = {};
+        if (contrato.versao !== versaoEsperada) {
+            throw new AppError("O contrato foi alterado por outra operação. Consulte os dados novamente.", 409);
+        }
+
+        const dadosValidados: Omit<DadosAtualizacaoContrato, "versaoEsperada"> = {};
 
         if (dados.numero !== undefined) {
             const numero = validarString(dados.numero, "numero");
             const outroContrato =
                 await this.contratoRepository.buscarPorNumero(numero);
 
-            if (outroContrato && outroContrato.id !== id) {
+            if (outroContrato && outroContrato.id !== idValido) {
                 throw new AppError("Já existe um contrato com este número.", 409);
             }
 
@@ -138,17 +144,23 @@ export default class ContratoService {
             throw new AppError("Informe pelo menos um campo para atualizar.", 400);
         }
 
-        return this.contratoRepository.atualizar(id, dadosValidados);
+        return this.contratoRepository.atualizar(idValido, dadosValidados, versaoEsperada);
     }
 
-    async excluir(idRecebido: string): Promise<void> {
-        const id = validarUuid(idRecebido);
-        const contrato = await this.contratoRepository.buscarPorId(id);
+    async excluir(id: string, versaoEsperada: number): Promise<void> {
+        const idValido = validarUuid(id);
+        const versaoValida = validarVersao(versaoEsperada);
+
+        const contrato = await this.contratoRepository.buscarPorId(idValido);
 
         if (!contrato) {
             throw new AppError("Contrato não encontrado.", 404);
         }
 
-        await this.contratoRepository.excluir(id);
+        if (contrato.versao !== versaoEsperada) {
+            throw new AppError("O contrato foi alterado por outra operação. Consulte os dados novamente.", 409);
+        }
+
+        await this.contratoRepository.excluir(idValido, versaoValida);
     }
 }

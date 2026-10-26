@@ -529,10 +529,6 @@ export type EnumEstadoEquipamentoFieldUpdateOperationsInput = {
   set?: $Enums.EstadoEquipamento
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type EquipamentoCreateNestedOneWithoutMovimentacoesInput = {
   create?: Prisma.XOR<Prisma.EquipamentoCreateWithoutMovimentacoesInput, Prisma.EquipamentoUncheckedCreateWithoutMovimentacoesInput>
   connectOrCreate?: Prisma.EquipamentoCreateOrConnectWithoutMovimentacoesInput

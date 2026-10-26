@@ -28,4 +28,5 @@ export interface DadosAtualizacaoContrato {
     dataFim?: Date | null;
     valor?: number | null;
     clausulas?: Prisma.InputJsonValue | null;
+    versaoEsperada: number;
 }

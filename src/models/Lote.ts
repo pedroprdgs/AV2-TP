@@ -20,4 +20,5 @@ export interface DadosAtualizacaoLote {
     notaFiscal?: string;
     transportadora?: string;
     dataEntrada?: Date;
+    versaoEsperada: number;
 }

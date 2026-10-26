@@ -24,4 +24,5 @@ export interface DadosAtualizacaoOrganizacao {
     cnpj?: string;
     email?: string | null;
     telefone?: string | null;
+    versaoEsperada: number;
 }

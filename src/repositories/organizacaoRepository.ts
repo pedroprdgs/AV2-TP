@@ -1,3 +1,6 @@
+import { Prisma } from "../prisma-generated/client.js";
+import { AppError } from "../errors/AppError.js";
+
 import { tratarErroPrisma } from "../errors/tratarErroPrisma.js";
 import { prisma } from "../lib/prisma.js";
 import type { DadosCriacaoOrganizacao, DadosAtualizacaoOrganizacao, Organizacao } from "../models/Organizacao.js";
@@ -25,30 +28,37 @@ export default class organizacaoRepository{
         return prisma.organizacao.findUnique({ where: { cnpj } });
     }
 
-    async atualizar(id: string, dados: DadosAtualizacaoOrganizacao): Promise<Organizacao> {
+    async atualizar(id: string, dados: Omit<DadosAtualizacaoOrganizacao, "versaoEsperada">, versaoEsperada: number): Promise<Organizacao> {
         try {
             const atualizada = await prisma.organizacao.update({
                 where: {
-                    id
+                    id,
+                    versao: versaoEsperada
                 },
                 data: {
                     ...dados,
-                    versao: {
-                        increment: 1
-                    }
+                    versao: { increment: 1 }
                 }
             });
 
             return atualizada;
         } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+                throw new AppError("Conflito de versão. Consulte a organização novamente.", 409);
+            }
+
             tratarErroPrisma(error);
         }
     }
 
-    async excluir(id: string): Promise<void> {
+    async excluir(id: string, versaoEsperada: number): Promise<void> {
         try {
-            await prisma.organizacao.delete({ where: { id } });
+            await prisma.organizacao.delete({ where: { id, versao: versaoEsperada } });
         } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+                throw new AppError("Conflito de versão. Consulte a organização novamente.", 409);
+            }
+
             tratarErroPrisma(error);
         }
     }

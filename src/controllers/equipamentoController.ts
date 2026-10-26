@@ -35,8 +35,8 @@ export default class EquipamentoController {
         return reply.status(200).send(equipamento);
     }
 
-    async excluir(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-        await this.service.excluir(request.params.id);
+    async excluir(request: FastifyRequest<{ Params: { id: string }, Body: { versaoEsperada: number } }>, reply: FastifyReply) {
+        await this.service.excluir(request.params.id, request.body.versaoEsperada);
         
         return reply.status(204).send();
     }

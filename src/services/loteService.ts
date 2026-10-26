@@ -4,6 +4,7 @@ import { AppError } from "../errors/AppError.js";
 import { validarUuid } from "../utils/validarUuid.js";
 import { validarString } from "../utils/validarString.js";
 import { validarData } from "../utils/validarData.js";
+import { validarVersao } from "../utils/validarVersao.js";
 import type { DadosCriacaoLote, DadosAtualizacaoLote } from "../models/Lote.js";
 
 export default class LoteService {
@@ -59,10 +60,16 @@ export default class LoteService {
 
     async atualizar(id: string, dados: DadosAtualizacaoLote) {
         const idValido = validarUuid(id);
+        const versaoEsperada = validarVersao(dados.versaoEsperada);
+
         const lote = await this.loteRepository.buscarPorId(idValido);
 
         if (!lote) {
             throw new AppError("Lote não encontrado.", 404);
+        }
+
+        if (lote.versao !== versaoEsperada) {
+            throw new AppError("O lote foi alterado por outra operação. Consulte os dados novamente.", 409);
         }
 
         const dadosValidados: {
@@ -87,17 +94,23 @@ export default class LoteService {
             throw new AppError("Informe pelo menos um campo para atualizar.", 400);
         }
 
-        return this.loteRepository.atualizar(id, dadosValidados);
+        return this.loteRepository.atualizar(id, dadosValidados, versaoEsperada);
     }
 
-    async excluir(idRecebido: string): Promise<void> {
-        const id = validarUuid(idRecebido);
-        const lote = await this.loteRepository.buscarPorId(id);
+    async excluir(id: string, versaoEsperada: number): Promise<void> {
+        const idValido = validarUuid(id);
+        const versaoValida = validarVersao(versaoEsperada);
+
+        const lote = await this.loteRepository.buscarPorId(idValido);
 
         if (!lote) {
             throw new AppError("Lote não encontrado.", 404);
         }
 
-        await this.loteRepository.excluir(id);
+        if (lote.versao !== versaoValida) {
+            throw new AppError("O lote foi alterado por outra operação. Consulte os dados novamente.", 409);
+        }
+
+        await this.loteRepository.excluir(idValido, versaoValida);
     }
 }

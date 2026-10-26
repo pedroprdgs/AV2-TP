@@ -1,6 +1,6 @@
 import { criarApp } from "./app.js";
 
-const app = criarApp();
+const app = await criarApp();
 
 const port = Number(process.env.PORT) || 3000;
 

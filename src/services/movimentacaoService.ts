@@ -2,8 +2,10 @@ import { prisma } from "../lib/prisma.js";
 import { AppError } from "../errors/AppError.js";
 import { validarUuid } from "../utils/validarUuid.js";
 import { validarString } from "../utils/validarString.js";
+import { validarVersao } from "../utils/validarVersao.js";
 import { EstadoEquipamento } from "../models/Equipamento.js";
 import type { Movimentacao } from "../models/Movimentacao.js";
+import MovimentacaoRepository from "../repositories/movimentacaoRepository.js";
 
 interface DadosCriacaoMovimentacao {
     estadoNovo: EstadoEquipamento;
@@ -13,6 +15,8 @@ interface DadosCriacaoMovimentacao {
 }
 
 export default class MovimentacaoService {
+    private movimentacaoRepository = new MovimentacaoRepository();
+
     async listarPorEquipamento(equipamentoIdRecebido: string): Promise<Movimentacao[]> {
         const equipamentoId = validarUuid(equipamentoIdRecebido);
 
@@ -22,15 +26,12 @@ export default class MovimentacaoService {
             throw new AppError("Equipamento não encontrado.", 404);
         }
 
-        return prisma.movimentacao.findMany({ where: { equipamentoId },  orderBy: { dataHora: "desc" } });
+        return this.movimentacaoRepository.listarPorEquipamento(equipamentoId);
     }
 
     async criar(equipamentoIdRecebido: string, dados: DadosCriacaoMovimentacao): Promise<Movimentacao> {
         const equipamentoId = validarUuid(equipamentoIdRecebido);
-
-        if (!Number.isInteger(dados.versaoEsperada) || dados.versaoEsperada < 1) {
-            throw new AppError("A versão esperada deve ser um número inteiro positivo.", 400);
-        }
+        const versaoValida = validarVersao(dados.versaoEsperada);
 
         if (!Object.values(EstadoEquipamento).includes(dados.estadoNovo)) {
             throw new AppError("Estado de equipamento inválido.", 400);
@@ -47,7 +48,7 @@ export default class MovimentacaoService {
                 throw new AppError("Equipamento não encontrado.", 404);
             }
 
-            if (equipamento.versao !== dados.versaoEsperada) {
+            if (equipamento.versao !== versaoValida) {
                 throw new AppError("O equipamento foi alterado por outra operação. Consulte os dados atualizados e tente novamente.", 409);
             }
 
@@ -76,7 +77,7 @@ export default class MovimentacaoService {
             const resultado = await tx.equipamento.updateMany({
                 where: {
                     id: equipamentoId,
-                    versao: dados.versaoEsperada,
+                    versao: versaoValida,
                 },
                 data: {
                     estado: dados.estadoNovo,
@@ -88,15 +89,15 @@ export default class MovimentacaoService {
                 throw new AppError("O equipamento foi alterado por outra operação. Consulte os dados atualizados e tente novamente.", 409);
             }
 
-            return tx.movimentacao.create({
-                data: {
+            return this.movimentacaoRepository.criar(
+                {
                     equipamentoId,
                     estadoAnterior,
                     estadoNovo: dados.estadoNovo,
                     justificativa,
                     observacao,
-                },
-            });
+                }, tx
+            );
         });
     }
 }

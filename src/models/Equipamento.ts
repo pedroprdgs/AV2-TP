@@ -27,4 +27,5 @@ export interface DadosAtualizacaoEquipamento {
     tipo?: string;
     descricao?: string | null;
     triagemCompleta?: boolean;
+    versaoEsperada: number;
 }
