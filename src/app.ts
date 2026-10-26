@@ -4,6 +4,10 @@ import { prisma } from "./lib/prisma.js";
 import { registrarErrorHandler } from "./errors/errorHandler.js";
 
 import { organizacaoRoutes } from "./routes/organizacaoRoutes.js";
+import { contratoRoutes } from "./routes/contratoRoutes.js";
+import { loteRoutes } from "./routes/loteRoutes.js";
+import { equipamentoRoutes } from "./routes/equipamentoRoutes.js";
+import { movimentacaoRoutes } from "./routes/movimentacaoRoutes.js";
 
 export function criarApp() {
     const app = Fastify({
@@ -13,6 +17,10 @@ export function criarApp() {
     registrarErrorHandler(app);
 
     app.register(organizacaoRoutes, { prefix: "/organizacoes" });
+    app.register(contratoRoutes, { prefix: "/contratos" });
+    app.register(loteRoutes, { prefix: "/lotes" });
+    app.register(equipamentoRoutes, { prefix: "/equipamentos" });
+    app.register(movimentacaoRoutes, { prefix: "/equipamentos" });
 
     app.get("/health", async () => {
         return {
