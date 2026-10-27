@@ -46,6 +46,18 @@ export async function criarApp() {
     app.register(movimentacaoRoutes, { prefix: "/equipamentos" });
     app.register(usuarioRoutes, { prefix: "/usuarios" });
 
+    app.get("/easteregg", {
+        schema: {
+            hide: true
+        }
+    }, async () => {
+        return {
+            message: "Nova conquista desbloqueada",
+            description: "Parabéns! Você chegou onde apenas as pessoas mais curiosas chegam.",
+            rarity: "UNICA",
+        };
+    });
+
     app.get("/health", {
         schema: {
             tags: ["Sistema"],
